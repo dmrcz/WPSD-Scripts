@@ -9,14 +9,14 @@
 #
 
 if [ "$(id -u)" != "0" ]; then
-  echo -e "You need to be root to run this command...\n"
-  exit 1
+    echo -e "You need to be root to run this command...\n"
+    exit 1
 fi
 
 exec 200>/var/lock/wpsd-update.lock || exit 1
 if ! flock -n 200 ; then
-  echo -e "Another instance is already running...\n"
-  exit 1
+    echo -e "Another instance is already running...\n"
+    exit 1
 fi
 
 script_name=$(basename "$0")
@@ -39,9 +39,9 @@ git_checkUpdateRequired() {
 
     # Return the output
     if [[ ${gitStatusRemote} != ${gitStatusLocal} ]]; then
-	echo "1"
+        echo "1"
     else
-	echo "0"
+        echo "0"
     fi
 }
 
@@ -82,7 +82,7 @@ git_update() {
             process_log_file > /dev/null 2>&1
             target_branch="master"
         elif [[ ${gitFolder} == "/opt/cast" ]]; then
-             target_branch="master"
+            target_branch="master"
         fi
 
         git fetch -q "${remote_name}" "${target_branch}" > /dev/null 2>&1
@@ -92,11 +92,11 @@ git_update() {
 
         if [[ $(git_checkUpdateRequired "${gitFolder}") -gt 0 ]]; then
             echo -e "  ${CROSS} Update re-sync required: forcing re-sync and update...."
-	    cd /tmp
+            cd /tmp
             curl -Ls -A "WPSD-Reset (Manual Update)" https://wpsd-swd.w0chp.net/WPSD-SWD/WPSD-Scripts/raw/branch/master/reset-wpsd | bash > /dev/null 2>&1
-	    echo -e "\n  ${COL_LIGHT_BLUE}${INFO} Sync & Reset complete: Relaunching Updater in 3 seconds..."
-	    sleep 4
-	    exec "$0" "$@"
+            echo -e "\n  ${COL_LIGHT_BLUE}${INFO} Sync & Reset complete: Relaunching Updater in 3 seconds..."
+            sleep 4
+            exec "$0" "$@"
         fi
 
         if [[ ${gitFolder} == "/usr/local/bin" ]]; then
@@ -121,49 +121,50 @@ term_banner() {
 
 perform_update() {
     if [ -t 1 ]; then
-    # This is running from a terminal, so it should be safe to update the OS
-	if [[ "$1" == "os" || "$1" == "all" ]]; then
-	    echo -e "\n${BULL} Checking for any available operating system updates."
-	    echo -e "  Please wait...\n"
-	    apt-get -q=2 update
-	    if ! apt-get upgrade --dry-run | grep -qw "0 upgraded"; then
-		echo -e "  ${COL_LIGHT_MAGENTA}${INFO} Operating system updates available; installing now..."
-		apt-get upgrade --fix-missing --fix-broken -y
-		apt-get -q=2 -y --purge autoremove >/dev/null 2>&1
-		apt-get -q=2 clean >/dev/null 2>&1
-		apt-get -q=2 autoclean >/dev/null 2>&1
-		echo -e "\n"
-		echo -e "  ${TICK} Operating System Updates Complete!!\n"
-	    else
-		echo -e "  ${INFO} No operating system updates required.\n"
-	    fi
-	    if [ "$1" == "os" ]; then 
-	    echo -e "${BULL} ${COL_LIGHT_BLUE}${INFO} WPSD is ${BOLD}not${COL_NC} updated by using ${COL_LIGHT_BLUE}${BOLD}sudo wpsd-update os${COL_NC}"
-	    echo -e "      To check for and install WPSD updates, run this"
-	    echo -e "      program again as: '${COL_LIGHT_BLUE}${BOLD}sudo wpsd-update${COL_NC}'"
-	    echo -e "      To check for and install WPSD and OS updates, run this"
-	    echo -e "      program again as: '${COL_LIGHT_BLUE}${BOLD}sudo wpsd-update all${COL_NC}'\n"
-           exit 0
+        # This is running from a terminal, so it should be safe to update the OS
+        if [[ "$1" == "os" || "$1" == "all" ]]; then
+            echo -e "\n${BULL} Checking for any available operating system updates."
+            echo -e "  Please wait...\n"
+            apt-get -q=2 update
+            if ! apt-get upgrade --dry-run | grep -qw "0 upgraded"; then
+                echo -e "  ${COL_LIGHT_MAGENTA}${INFO} Operating system updates available; installing now..."
+                apt-get upgrade --fix-missing --fix-broken -y
+                apt-get -q=2 -y --purge autoremove >/dev/null 2>&1
+                apt-get -q=2 clean >/dev/null 2>&1
+                apt-get -q=2 autoclean >/dev/null 2>&1
+                echo -e "\n"
+                echo -e "  ${TICK} Operating System Updates Complete!!\n"
+            else
+                echo -e "  ${INFO} No operating system updates required.\n"
+            fi
+            if [ "$1" == "os" ]; then 
+                echo -e "${BULL} ${COL_LIGHT_BLUE}${INFO} WPSD is ${BOLD}not${COL_NC} updated by using ${COL_LIGHT_BLUE}${BOLD}sudo wpsd-update os${COL_NC}"
+                echo -e "      To check for and install WPSD updates, run this"
+                echo -e "      program again as: '${COL_LIGHT_BLUE}${BOLD}sudo wpsd-update${COL_NC}'"
+                echo -e "      To check for and install WPSD and OS updates, run this"
+                echo -e "      program again as: '${COL_LIGHT_BLUE}${BOLD}sudo wpsd-update all${COL_NC}'\n"
+                exit 0
+            fi
         fi
-	fi
     fi
 
     pkill .wpsd-slipstream-tasks > /dev/null 2>&1
     pkill .wpsd-running-tasks > /dev/null 2>&1
 
     if [ "$DISPLAY_VALUE" == "Nextion" ] ; then
-	if [ "${OS_VER}" -ge 12 ] ; then
-	    systemctl stop nextiondriver.service > /dev/null 2>&1
- 	    /usr/local/sbin/.wpsd-nextion-text.py t1 "Please Wait..." > /dev/null 2>&1
-	    /usr/local/sbin/.wpsd-nextion-text.py t0 "Updating..." > /dev/null 2>&1
-	fi
+        if [ "${OS_VER}" -ge 12 ] ; then
+            systemctl stop nextiondriver.service > /dev/null 2>&1
+            /usr/local/sbin/.wpsd-nextion-text.py t1 "Please Wait..." > /dev/null 2>&1
+            /usr/local/sbin/.wpsd-nextion-text.py t0 "Updating..." > /dev/null 2>&1
+        fi
     fi
-    if [ "$DISPLAY_VALUE" == "OLED" ] ; then
-	if [ "${OS_VER}" -ge 12 ] ; then
-	    systemctl stop mmdvmhost.timer > /dev/null 2>&1
-	    systemctl stop mmdvmhost.service > /dev/null 2>&1
-	    /usr/local/sbin/.wpsd-oled.text.py --text1 "Updating..." --text2 "Please Wait..." > /dev/null 2>&1
-	fi
+
+    if [ "${OS_VER}" -ge 12 ]; then
+        sudo systemctl daemon-reload > /dev/null 2>&1
+        systemctl reenable wpsd-oled-bootup.service > /dev/null 2>&1
+        systemctl reenable wpsd-oled-reboot.service > /dev/null 2>&1
+        systemctl reenable wpsd-oled-shutdown.service > /dev/null 2>&1
+        systemctl reenable wpsd-oled-preshutdown.service > /dev/null 2>&1
     fi
 
     systemctl is-active --quiet cron.service && systemctl stop cron.service > /dev/null 2>&1
@@ -174,23 +175,23 @@ perform_update() {
     systemctl is-active --quiet wpsd-cache.timer && systemctl stop wpsd-cache.timer > /dev/null 2>&1
 
     if [ -t 1 ] ; then
-	if ! [ $(cat /lib/systemd/system/nginx.service | grep -o "mkdir") ]; then
-	    sed -i '\/PIDFile=\/run\/nginx.pid/a ExecStartPre=\/bin\/mkdir -p \/var\/log\/nginx' /lib/systemd/system/nginx.service
-	    systemctl daemon-reload
-	    systemctl restart nginx.service
-	    echo -e "  ${NOTE} ${COL_LIGHT_YELLOW}Note:${COL_NC} Web server configuration has been updated; restarting update..."
-	    exec "$0" "$@"
-	    exit 1
-	fi
+        if ! [ $(cat /lib/systemd/system/nginx.service | grep -o "mkdir") ]; then
+            sed -i '\/PIDFile=\/run\/nginx.pid/a ExecStartPre=\/bin\/mkdir -p \/var\/log\/nginx' /lib/systemd/system/nginx.service
+            systemctl daemon-reload
+            systemctl restart nginx.service
+            echo -e "  ${NOTE} ${COL_LIGHT_YELLOW}Note:${COL_NC} Web server configuration has been updated; restarting update..."
+            exec "$0" "$@"
+            exit 1
+        fi
     fi
 
     echo -e "\n${BULL} Checking connectivity to the WPSD Update System..."
     conn_check
     if $connection_established; then
-	echo -e "  ${COL_BRIGHT_GREEN}${TICK} Connection established!\n"
+        echo -e "  ${COL_BRIGHT_GREEN}${TICK} Connection established!\n"
     else
-	echo -e "  ${CROSS} ${COL_BRIGHT_RED}ERROR:${COL_NC} Cannot connect to the WPSD Update System. Try again later. Exiting...\n"
-	exit 1
+        echo -e "  ${CROSS} ${COL_BRIGHT_RED}ERROR:${COL_NC} Cannot connect to the WPSD Update System. Try again later. Exiting...\n"
+        exit 1
     fi
 
     echo -e "${BULL} Updating WPSD Utilities and Support Programs..."
@@ -213,54 +214,54 @@ perform_update() {
     # dvmega cast-specific stuff
     castResult=$(isDVmegaCast)
     if [ "$castResult" == "true" ]; then
-	echo -e "${BULL} Updating WPSD DVMega CAST Software..."
-	# setup local cast repo and link repo to cast PATH
-	if [ ! -d '/opt/cast' ] ; then
-	   cd /usr/local/sbin
-	   git reset --hard > /dev/null 2>&1
+        echo -e "${BULL} Updating WPSD DVMega CAST Software..."
+        # setup local cast repo and link repo to cast PATH
+        if [ ! -d '/opt/cast' ] ; then
+            cd /usr/local/sbin
+            git reset --hard > /dev/null 2>&1
 
-	   systemctl stop castudp.service > /dev/null 2>&1
-	   systemctl stop castserial.service > /dev/null 2>&1
+            systemctl stop castudp.service > /dev/null 2>&1
+            systemctl stop castserial.service > /dev/null 2>&1
 
-	   git clone https://wpsd-swd.w0chp.net/WPSD-SWD/DVMega-Cast.git /opt/cast > /dev/null 2>&1
-	   cd /opt/cast
-	   git checkout master > /dev/null 2>&1
-	   git reset --hard origin/master > /dev/null 2>&1
+            git clone https://wpsd-swd.w0chp.net/WPSD-SWD/DVMega-Cast.git /opt/cast > /dev/null 2>&1
+            cd /opt/cast
+            git checkout master > /dev/null 2>&1
+            git reset --hard origin/master > /dev/null 2>&1
 
-	   rm -rf /usr/local/cast/sbin
-	   ln -s /opt/cast/usr-local-cast-sbin /usr/local/cast/sbin > /dev/null 2>&1
+            rm -rf /usr/local/cast/sbin
+            ln -s /opt/cast/usr-local-cast-sbin /usr/local/cast/sbin > /dev/null 2>&1
 
-	   rm -rf /usr/local/cast/bin
-	   ln -s /opt/cast/usr-local-cast-bin /usr/local/cast/bin > /dev/null 2>&1
+            rm -rf /usr/local/cast/bin
+            ln -s /opt/cast/usr-local-cast-bin /usr/local/cast/bin > /dev/null 2>&1
 
-	   systemctl start castudp.service > /dev/null 2>&1
-	   systemctl start castserial.service > /dev/null 2>&1
+            systemctl start castudp.service > /dev/null 2>&1
+            systemctl start castserial.service > /dev/null 2>&1
 
-	   mkdir /usr/local/cast/etc > /dev/null 2>&1
-	   cp -a /opt/cast/cast-factory-settings/* /usr/local/cast/etc/ > /dev/null 2>&1
-	fi
-	if [ -d '/opt/cast' ] ; then
-	    # setup the memory-list and firmware upgrade www symlinks if they don't exist yet.
-	    if [ ! -L '/var/www/dashboard/admin/cast' ] && [ ! -d '/var/www/dashboard/admin/cast' ]; then
-		ln -s /opt/cast/usr-local-cast-www /var/www/dashboard/admin/cast > /dev/null 2>&1
-	    fi
-	    # setup central fw upload dir.
-	    if [ ! -d '/opt/cast/usr-local-cast-www/cast-firmware/fw' ]; then
-		mkdir /opt/cast/usr-local-cast-www/cast-firmware/fw
-	    fi
-	fi
-	# ensure configs always have proper perms
-	chmod 775 /usr/local/cast/etc
-	chown -R www-data:pi-star /usr/local/cast/etc
-	chmod 664 /usr/local/cast/etc/*
+            mkdir /usr/local/cast/etc > /dev/null 2>&1
+            cp -a /opt/cast/cast-factory-settings/* /usr/local/cast/etc/ > /dev/null 2>&1
+        fi
+        if [ -d '/opt/cast' ] ; then
+            # setup the memory-list and firmware upgrade www symlinks if they don't exist yet.
+            if [ ! -L '/var/www/dashboard/admin/cast' ] && [ ! -d '/var/www/dashboard/admin/cast' ]; then
+                ln -s /opt/cast/usr-local-cast-www /var/www/dashboard/admin/cast > /dev/null 2>&1
+            fi
+            # setup central fw upload dir.
+            if [ ! -d '/opt/cast/usr-local-cast-www/cast-firmware/fw' ]; then
+                mkdir /opt/cast/usr-local-cast-www/cast-firmware/fw
+            fi
+        fi
+        # ensure configs always have proper perms
+        chmod 775 /usr/local/cast/etc
+        chown -R www-data:pi-star /usr/local/cast/etc
+        chmod 664 /usr/local/cast/etc/*
 
-	# www is a symlink so get main perms setup
-	chmod 775 /opt/cast/usr-local-cast-www
-	chmod 775 /opt/cast/usr-local-cast-www/cast-firmware/fw
-	chown -R www-data:www-data /opt/cast/usr-local-cast-www
+        # www is a symlink so get main perms setup
+        chmod 775 /opt/cast/usr-local-cast-www
+        chmod 775 /opt/cast/usr-local-cast-www/cast-firmware/fw
+        chown -R www-data:www-data /opt/cast/usr-local-cast-www
 
-	git_update /opt/cast
-	echo ""
+        git_update /opt/cast
+        echo ""
     fi
 
     #echo -e "  ${TICK} Done!\n" # updates. complete
@@ -278,7 +279,7 @@ perform_update() {
 
     # if css does not exist, install default one
     if [ ! -f "/etc/wpsd-css.ini" ] ; then
-	curl -Ls -A "${uaStrSF}" $SUPPORTING_FILES_REPO/WPSD-CSS.ini -o /etc/wpsd-css.ini
+        curl -Ls -A "${uaStrSF}" $SUPPORTING_FILES_REPO/WPSD-CSS.ini -o /etc/wpsd-css.ini
     fi
 
     conn_check
@@ -297,28 +298,28 @@ perform_update() {
     systemctl is-active --quiet wpsd-cache.timer || systemctl start wpsd-cache.timer > /dev/null 2>&1
 
     if [ "$DISPLAY_VALUE" == "Nextion" ] ; then
-	if ! systemctl is-active --quiet nextiondriver.service; then
-	    systemctl start nextiondriver.service > /dev/null 2>&1
- 	fi
+        if ! systemctl is-active --quiet nextiondriver.service; then
+            systemctl start nextiondriver.service > /dev/null 2>&1
+        fi
     fi
     if ! systemctl is-active --quiet mmdvmhost.service; then
-	systemctl start mmdvmhost.service > /dev/null 2>&1
+        systemctl start mmdvmhost.service > /dev/null 2>&1
     fi
     if ! systemctl is-active --quiet mmdvmhost.timer; then
-	systemctl start mmdvmhost.timer > /dev/null 2>&1
+        systemctl start mmdvmhost.timer > /dev/null 2>&1
     fi
 
     echo -e "  ${TICK} Done!\n" # maint. complete
 
     if [ -t 1 ]; then
-    # This is running from a terminal, so it should be safe to update the OS
-	if [[ "$1" != "os" && "$1" != "all" ]]; then
-	    echo -e "${BULL} ${COL_LIGHT_BLUE}${INFO} Operating system is ${BOLD}not${COL_NC} updated by default..."
-	    echo -e "      To check for and install OS updates, run this"
-	    echo -e "      program again as: '${COL_LIGHT_BLUE}${BOLD}sudo wpsd-update os${COL_NC}'"
-	    echo -e "      To check for and install WPSD and OS updates, run this"
-	    echo -e "      program again as: '${COL_LIGHT_BLUE}${BOLD}sudo wpsd-update all${COL_NC}'\n"
-	fi
+        # This is running from a terminal, so it should be safe to update the OS
+        if [[ "$1" != "os" && "$1" != "all" ]]; then
+            echo -e "${BULL} ${COL_LIGHT_BLUE}${INFO} Operating system is ${BOLD}not${COL_NC} updated by default..."
+            echo -e "      To check for and install OS updates, run this"
+            echo -e "      program again as: '${COL_LIGHT_BLUE}${BOLD}sudo wpsd-update os${COL_NC}'"
+            echo -e "      To check for and install WPSD and OS updates, run this"
+            echo -e "      program again as: '${COL_LIGHT_BLUE}${BOLD}sudo wpsd-update all${COL_NC}'\n"
+        fi
     fi
 
     /bin/sync
@@ -326,14 +327,14 @@ perform_update() {
     /bin/sync
 
     if [ -t 1 ]; then # term. vs. web output...
-	echo -e "${COL_REG_CYAN}+-------------------------------------------+${COL_NC}"
-	echo -e "${COL_REG_CYAN}|                                           |${COL_NC}"
-	echo -e "${COL_REG_CYAN}|  ${TICK} ${COMPL} Update Process Finished!   ${COL_REG_CYAN}|${COL_NC}"
-	echo -e "${COL_REG_CYAN}|                                           |${COL_NC}"
-	echo -e "${COL_REG_CYAN}+-------------------------------------------+${COL_NC}\n"
+        echo -e "${COL_REG_CYAN}+-------------------------------------------+${COL_NC}"
+        echo -e "${COL_REG_CYAN}|                                           |${COL_NC}"
+        echo -e "${COL_REG_CYAN}|  ${TICK} ${COMPL} Update Process Finished!   ${COL_REG_CYAN}|${COL_NC}"
+        echo -e "${COL_REG_CYAN}|                                           |${COL_NC}"
+        echo -e "${COL_REG_CYAN}+-------------------------------------------+${COL_NC}\n"
     else
-	echo -e "${TICK} ${COMPL} Update Process Finished!"
-	echo -e "<h3><a style='color:white;text-decoration:underline;'' href='/'>Back to Dashboard <span style='font-size: 30px;'>&larr;</span></a></h3>"
+        echo -e "${TICK} ${COMPL} Update Process Finished!"
+        echo -e "<h3><a style='color:white;text-decoration:underline;'' href='/'>Back to Dashboard <span style='font-size: 30px;'>&larr;</span></a></h3>"
     fi
 }
 
@@ -343,25 +344,24 @@ if [ -t 1 ]; then
     # run via terminal, only output to screen
     export FORCE_COLOR=1
     if [ "$OptIntoDiags_value" != 'true' ] ; then
-	echo -e "\nExiting...\n"
-	echo "You have opted out of updates and diagnostics."
-	echo -e "To enable updates, you must opt-in via the Configuration Page.\n"
-	exit 1
+        echo -e "\nExiting...\n"
+        echo "You have opted out of updates and diagnostics."
+        echo -e "To enable updates, you must opt-in via the Configuration Page.\n"
+        exit 1
     else
-	term_banner
-	perform_update "$@"
+        term_banner
+        perform_update "$@"
     fi
 else
     # if not run via terminal, log everything into a log file
     if [ "$OptIntoDiags_value" != 'true' ] ; then
-	echo -e "\nExiting...\n" | tee -a /var/log/pi-star/WPSD-update.log
-	echo "You have opted out of updates and diagnostics." | tee -a /var/log/pi-star/WPSD-update.log
-	echo -e "To enable updates, you must opt-in via the <a style='color:white;text-decoration:underline;'' href='/admin/configure.php#diagsOptForm'>Configuration Page</a>.\n" | tee -a /var/log/pi-star/WPSD-update.log
-	exit 1
+        echo -e "\nExiting...\n" | tee -a /var/log/pi-star/WPSD-update.log
+        echo "You have opted out of updates and diagnostics." | tee -a /var/log/pi-star/WPSD-update.log
+        echo -e "To enable updates, you must opt-in via the <a style='color:white;text-decoration:underline;'' href='/admin/configure.php#diagsOptForm'>Configuration Page</a>.\n" | tee -a /var/log/pi-star/WPSD-update.log
+        exit 1
     else
-	perform_update >> /var/log/pi-star/WPSD-update.log 2>&1
+        perform_update >> /var/log/pi-star/WPSD-update.log 2>&1
     fi
 fi
 
 exit 0
-

@@ -50,21 +50,30 @@ if [ "$OptIntoDiags_value" != 'true' ] ; then
     exit 1
 fi
 
+if [ "${OS_VER}" -ge 12 ]; then
+    sudo systemctl daemon-reload > /dev/null 2>&1
+    systemctl reenable wpsd-oled-bootup.service > /dev/null 2>&1
+    systemctl reenable wpsd-oled-reboot.service > /dev/null 2>&1
+    systemctl reenable wpsd-oled-shutdown.service > /dev/null 2>&1
+    systemctl reenable wpsd-oled-preshutdown.service > /dev/null 2>&1
+fi
+
+/usr/local/sbin/wpsd-services fullstop > /dev/null 2>&1
+
 echo -e "\nStopping services..."
 if [ "$DISPLAY_VALUE" == "Nextion" ] ; then
     if [ "${OS_VER}" -ge 12 ] ; then
-	killall NextionDriver  > /dev/null 2>&1
-	/usr/local/sbin/.wpsd-nextion-text.py t1 "Please Wait..."
-	/usr/local/sbin/.wpsd-nextion-text.py t0 "Auto-Updating..."
+    killall NextionDriver  > /dev/null 2>&1
+    /usr/local/sbin/.wpsd-nextion-text.py t1 "Please Wait..."
+    /usr/local/sbin/.wpsd-nextion-text.py t0 "Auto-Updating..."
     fi
 fi
 if [ "$DISPLAY_VALUE" == "OLED" ] ; then
     if [ "${OS_VER}" -ge 12 ] ; then
-	/usr/local/sbin/.wpsd-oled.text.py --text1 "Auto Updating..." --text2 "Please Wait..."
+    /usr/local/sbin/.wpsd-oled.text.py --text1 "Auto Updating..." --text2 "Please Wait..."
     fi
 fi
 
-/usr/local/sbin/wpsd-services fullstop > /dev/null 2>&1
 
 echo -e "\nChecking connectivity to WPSD update server..."
 conn_check
