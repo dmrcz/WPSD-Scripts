@@ -172,7 +172,7 @@ perform_update() {
     echo -e "\n${BULL} Checking connectivity to the WPSD Update System..."
     conn_check
     if $connection_established; then
-        echo -e "  ${COL_BRIGHT_GREEN}${TICK} Connection established! Starting update process...\n"
+        echo -e "  ${COL_BRIGHT_GREEN}${TICK} Connection established! Starting update process; Please wait...\n"
     else
         echo -e "  ${CROSS} ${COL_BRIGHT_RED}ERROR:${COL_NC} Cannot connect to the WPSD Update System. Try again later. Exiting...\n"
         exit 1
@@ -180,22 +180,22 @@ perform_update() {
 
     if [ "$DISPLAY_VALUE" == "Nextion" ] ; then
         if [ "${OS_VER}" -ge 12 ] ; then
+            sudo systemctl daemon-reload > /dev/null 2>&1
+            systemctl reenable wpsd-nx-bootup.service > /dev/null 2>&1
+            systemctl reenable wpsd-nx-reboot.service > /dev/null 2>&1
+            systemctl reenable wpsd-nx-shutdown.service > /dev/null 2>&1
+            systemctl reenable wpsd-nx-preshutdown.service > /dev/null 2>&1
             systemctl stop nextiondriver.service > /dev/null 2>&1
             /usr/local/sbin/.wpsd-nextion-text.py t1 "Please Wait..." > /dev/null 2>&1
             /usr/local/sbin/.wpsd-nextion-text.py t0 "Updating..." > /dev/null 2>&1
         fi
-    fi
-
-    if [ "${OS_VER}" -ge 12 ]; then
-        sudo systemctl daemon-reload > /dev/null 2>&1
-        systemctl reenable wpsd-oled-bootup.service > /dev/null 2>&1
-        systemctl reenable wpsd-oled-reboot.service > /dev/null 2>&1
-        systemctl reenable wpsd-oled-shutdown.service > /dev/null 2>&1
-        systemctl reenable wpsd-oled-preshutdown.service > /dev/null 2>&1
-    fi
-
-    if [ "$DISPLAY_VALUE" == "OLED" ] ; then
-        if [ "${OS_VER}" -ge 12 ] ; then
+    elif [ "$DISPLAY_VALUE" == "OLED" ] ; then
+        if [ "${OS_VER}" -ge 12 ]; then
+            sudo systemctl daemon-reload > /dev/null 2>&1
+            systemctl reenable wpsd-oled-bootup.service > /dev/null 2>&1
+            systemctl reenable wpsd-oled-reboot.service > /dev/null 2>&1
+            systemctl reenable wpsd-oled-shutdown.service > /dev/null 2>&1
+            systemctl reenable wpsd-oled-preshutdown.service > /dev/null 2>&1
             systemctl stop mmdvmhost.timer > /dev/null 2>&1
             systemctl stop mmdvmhost.service > /dev/null 2>&1
             /usr/local/sbin/.wpsd-oled.text.py --text1 "Updating..." --text2 "Please Wait..." > /dev/null 2>&1

@@ -50,12 +50,22 @@ if [ "$OptIntoDiags_value" != 'true' ] ; then
     exit 1
 fi
 
-if [ "${OS_VER}" -ge 12 ]; then
-    sudo systemctl daemon-reload > /dev/null 2>&1
-    systemctl reenable wpsd-oled-bootup.service > /dev/null 2>&1
-    systemctl reenable wpsd-oled-reboot.service > /dev/null 2>&1
-    systemctl reenable wpsd-oled-shutdown.service > /dev/null 2>&1
-    systemctl reenable wpsd-oled-preshutdown.service > /dev/null 2>&1
+if [ "$DISPLAY_VALUE" == "Nextion" ] ; then
+    if [ "${OS_VER}" -ge 12 ] ; then
+        sudo systemctl daemon-reload > /dev/null 2>&1
+        systemctl reenable wpsd-nx-bootup.service > /dev/null 2>&1
+        systemctl reenable wpsd-nx-reboot.service > /dev/null 2>&1
+        systemctl reenable wpsd-nx-shutdown.service > /dev/null 2>&1
+        systemctl reenable wpsd-nx-preshutdown.service > /dev/null 2>&1
+    fi
+elif [ "$DISPLAY_VALUE" == "OLED" ] ; then
+    if [ "${OS_VER}" -ge 12 ]; then
+        sudo systemctl daemon-reload > /dev/null 2>&1
+        systemctl reenable wpsd-oled-bootup.service > /dev/null 2>&1
+        systemctl reenable wpsd-oled-reboot.service > /dev/null 2>&1
+        systemctl reenable wpsd-oled-shutdown.service > /dev/null 2>&1
+        systemctl reenable wpsd-oled-preshutdown.service > /dev/null 2>&1
+    fi
 fi
 
 /usr/local/sbin/wpsd-services fullstop > /dev/null 2>&1
