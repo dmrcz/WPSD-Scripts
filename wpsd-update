@@ -172,7 +172,7 @@ perform_update() {
     echo -e "\n${BULL} Checking connectivity to the WPSD Update System..."
     conn_check
     if $connection_established; then
-        echo -e "  ${COL_BRIGHT_GREEN}${TICK} Connection established! Starting update proces...\n"
+        echo -e "  ${COL_BRIGHT_GREEN}${TICK} Connection established! Starting update process...\n"
     else
         echo -e "  ${CROSS} ${COL_BRIGHT_RED}ERROR:${COL_NC} Cannot connect to the WPSD Update System. Try again later. Exiting...\n"
         exit 1
