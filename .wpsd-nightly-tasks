@@ -43,8 +43,6 @@ chmod 775 /var/log/pi-star > /dev/null 2>&1
 
 process_log_file > /dev/null 2>&1
 
-apt-get -y --purge autoremove >/dev/null 2>&1
-
 if [ "$OptIntoDiags_value" != 'true' ] ; then
     echo "User has opted out of updates and diagnostics. Exiting..."
     exit 1
@@ -68,6 +66,7 @@ elif [ "$DISPLAY_VALUE" == "OLED" ] ; then
     fi
 fi
 
+echo -e "\nStopping WPSD Services..."
 /usr/local/sbin/wpsd-services fullstop > /dev/null 2>&1
 
 echo -e "\nStopping services..."
@@ -83,7 +82,6 @@ if [ "$DISPLAY_VALUE" == "OLED" ] ; then
     /usr/local/sbin/.wpsd-oled.text.py --text1 "Auto Updating..." --text2 "Please Wait..."
     fi
 fi
-
 
 echo -e "\nChecking connectivity to WPSD update server..."
 conn_check
@@ -203,12 +201,19 @@ if $connection_established; then
 	    fi
     	fi
     fi
-    conn_check
+    echo -e "\nUpdating Operating System..."
+    DEBIAN_FRONTEND=noninteractive dpkg --configure -a
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get --fix-broken install -y
+    DEBIAN_FRONTEND=noninteractive apt-get upgrade -y
+    DEBIAN_FRONTEND=noninteractive apt-get autoremove -y
+    apt-get clean
+    apt-get autoclean
 else
     echo "WPSD Update Server connection failure! Will try again during next scheduled job tommorrow."
 fi
 
-echo -e "\nStarting services..."
+echo -e "\nStarting WPSD services..."
 /usr/local/sbin/wpsd-services start > /dev/null 2>&1
 
 /usr/local/sbin/.wpsd-slipstream-tasks > /dev/null 2>&1
