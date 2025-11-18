@@ -209,6 +209,8 @@ if $connection_established; then
     DEBIAN_FRONTEND=noninteractive apt-get autoremove -y
     apt-get clean
     apt-get autoclean
+
+    conn_check
 else
     echo "WPSD Update Server connection failure! Will try again during next scheduled job tommorrow."
 fi
