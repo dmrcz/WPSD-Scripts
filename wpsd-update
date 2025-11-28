@@ -121,7 +121,6 @@ term_banner() {
 
 perform_update() {
     if [ -t 1 ]; then
-        # This is running from a terminal, so it should be safe to update the OS
         if [[ "$1" == "os" || "$1" == "all" ]]; then
             echo -e "\n${BULL} Checking for any available operating system updates."
             echo -e "  Please wait...\n"
