@@ -92,9 +92,9 @@ conn_check() {
         connection_established=true
         rsync -a --remove-source-files "$temp_file" "$ini_file" > /dev/null 2>&1
         chmod 644 "$ini_file"
-    else
-        rm -f "$temp_file"
     fi
+    
+    rm -f "$temp_file"
 }
 
 # Function to check if any network interface has an IP address
