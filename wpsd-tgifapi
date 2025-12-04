@@ -211,7 +211,6 @@ clear)
 ;;
 esac
 
-
 # Do the magic
 echo " Request to TGIF API: ${REQUEST}"
 RESULT=$(wget -q -O - --user-agent="WPSD CLI tool for: ${DMRID}" --header="Content-Type: application/x-www-form-urlencoded" "${APIURL}")
