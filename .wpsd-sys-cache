@@ -31,7 +31,7 @@ check_empty_keys() {
     local empty_keys=0
 
     if [ -f "$TMP_INI_FILE" ]; then
-        for key in ircddbgateway MMDVMHost kernel Hardware Platform iface ModemMode ModemType ModemFW TXCO ControllerType ProcNum UUID ConfUpdReqd CallLookupProvider Callsign WPSD_Ver; do
+        for key in ircddbgateway MMDVMHost kernel Hardware Platform iface ModemMode ModemType ModemFW TXCO ControllerType ProcNum UUID CallLookupProvider Callsign WPSD_Ver; do
             if ! grep -qE "^${key} = .+" "$TMP_INI_FILE"; then
                 empty_keys=1
                 break
@@ -47,7 +47,7 @@ check_key_existence() {
     local missing_keys=0
 
     if [ -f "$TMP_INI_FILE" ]; then
-        for key in ircddbgateway MMDVMHost kernel Hardware Platform iface ModemMode ModemType ModemFW TCXO ControllerType ProcNum UUID ConfUpdReqd CallLookupProvider Callsign WPSD_Ver; do
+        for key in ircddbgateway MMDVMHost kernel Hardware Platform iface ModemMode ModemType ModemFW TCXO ControllerType ProcNum UUID CallLookupProvider Callsign WPSD_Ver; do
             if ! grep -qE "^${key} =" "$TMP_INI_FILE"; then
                 missing_keys=1
                 break
@@ -76,7 +76,6 @@ TCXO =
 ControllerType = 
 ProcNum = 
 UUID = 
-ConfUpdReqd = 2023010400
 CallLookupProvider = QRZ
 Callsign = 
 WPSD_Ver = 
