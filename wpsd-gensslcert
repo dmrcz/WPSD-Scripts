@@ -11,6 +11,14 @@ if [ "$(id -u)" != "0" ]; then
 	exit 1
 fi
 
+source /usr/local/sbin/.wpsd-common-funcs
+
+if [ "${OS_VER}" -lt 13 ]; then # only trixie and above
+    echo "Unsupported WPSD release. To use this SSL helper script,"
+    echo "you must be running WPSD Trixie (v.13) or greater."
+    exit 1
+fi
+
 exec 200>/var/lock/wpsd-ssl.lock || exit 1
 if ! flock -n 200 ; then
 	echo -e "Another instance is already running...\n"
@@ -53,27 +61,30 @@ elif [ "$1" == "enable" ]; then
 else
 	cat << EOF
 
-wpsd-sslgensslcert
+WPSD Self-Signed SSL Manager
 
-This script generates a self-signed SSL certificate for the WPSD dashboard and enables
-its use in the web server.
+Description:
+  This script manages the self-signed SSL certificate for the WPSD dashboard
+  and toggles HTTPS support in the Nginx web server.
 
-There are three options;
+Usage:
+  sudo wpsd-gensslcert [OPTION]
 
-deletecert 	- Deletes the existing certificate.  If you are using https then
-			  you need to run the "enable" command again to generate a new 
-			  certificate.
+Options:
+  enable      Generates a new certificate (if one does not exist) and
+              configures the web server to use HTTPS.
 
-disable		- Disables https in the webserver.  Does *not* delete the 
-			  existing certificate.
+  disable     Disables HTTPS and reverts the web server to standard HTTP.
+              Note: This does *not* delete the existing certificate file.
 
-enable		- Generates a new certificate (if required) and configures
-			  the web server for https.
+  deletecert  Deletes the existing SSL certificate file.
+              Note: If you are currently using HTTPS, you must run the
+              "enable" command again immediately to generate a new key.
 
-Both the "enable" and "disable" commands will restart the web server
-making it temporarily unavailable.
-
-This command must be run as root or via sudo.
+Important Notes:
+  * This script must be run as root or via sudo.
+  * Running "enable" or "disable" will restart the Nginx web server,
+    making the dashboard temporarily unavailable.
 
 EOF
 fi
