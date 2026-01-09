@@ -1,7 +1,14 @@
 #!/bin/bash
 
 source /usr/local/sbin/.wpsd-common-funcs
-
+if [ -f /etc/os-release ]; then
+    source /etc/os-release
+fi
+if [ -f /etc/debian_version ]; then
+    deb_ver=$(< /etc/debian_version)
+    deb_ver="${deb_ver//[[:space:]]/}"
+fi
+osInfo="${VERSION_CODENAME^} (v${deb_ver})"
 UUID=$( grep UUID /etc/WPSD-release | awk '{print $3}' )
 platInfo=$( /usr/local/sbin/.wpsd-platform-detect )
 
@@ -56,6 +63,7 @@ echo ' _      _____  _______
 	echo -e "------------------"
 	echo -e "  ${BULL} WPSD Instance ID:\n      ${COL_LIGHT_MAGENTA}${UUID}${COL_NC}"
  	echo -e "  ${BULL} Platform Info:\n      ${COL_LIGHT_MAGENTA}${platInfo}${COL_NC}"
+	echo -e "  ${BULL} OS Info:\n      ${COL_LIGHT_MAGENTA}${osInfo}${COL_NC}"
 	echo -e ""
     fi
 }
