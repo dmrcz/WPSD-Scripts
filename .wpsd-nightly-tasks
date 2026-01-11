@@ -2,6 +2,7 @@
 
 #
 # WPSD Nightly Tasks  - W0CHP
+# Runs from a systemd timer (wpsd-nightly-tasks.timer), randomized exec times: 0100-0359 local time
 #
 
 if [ "$(id -u)" != "0" ]; then
@@ -43,11 +44,6 @@ chmod 775 /var/log/pi-star > /dev/null 2>&1
 
 process_log_file > /dev/null 2>&1
 
-if [ "$OptIntoDiags_value" != 'true' ] ; then
-    echo "User has opted out of updates and diagnostics. Exiting..."
-    exit 1
-fi
-
 if [ "$DISPLAY_VALUE" == "Nextion" ] ; then
     if [ "${OS_VER}" -ge 12 ] ; then
         sudo systemctl daemon-reload > /dev/null 2>&1
@@ -64,6 +60,13 @@ elif [ "$DISPLAY_VALUE" == "OLED" ] ; then
         systemctl reenable wpsd-oled-shutdown.service > /dev/null 2>&1
         systemctl reenable wpsd-oled-preshutdown.service > /dev/null 2>&1
     fi
+fi
+
+
+# if user has opted out of updates, stop here...
+if [ "$OptIntoDiags_value" != 'true' ] ; then
+    echo "User has opted out of updates and diagnostics. Exiting..."
+    exit 0
 fi
 
 echo -e "\nStopping WPSD Services..."
@@ -201,14 +204,15 @@ if $connection_established; then
 	    fi
     	fi
     fi
-    echo -e "\nUpdating Operating System..."
-    DEBIAN_FRONTEND=noninteractive dpkg --configure -a
-    apt-get update
-    DEBIAN_FRONTEND=noninteractive apt-get --fix-broken install -y
-    DEBIAN_FRONTEND=noninteractive apt-get upgrade -y
-    DEBIAN_FRONTEND=noninteractive apt-get autoremove -y
-    apt-get clean
-    apt-get autoclean
+    #echo -e "\nUpdating Operating System..."
+    #DEBIAN_FRONTEND=noninteractive dpkg --configure -a
+    #apt-get update
+    #DEBIAN_FRONTEND=noninteractive apt-get --fix-broken install -y
+    #DEBIAN_FRONTEND=noninteractive apt-get upgrade -y
+    #DEBIAN_FRONTEND=noninteractive apt-get autoremove -y
+    apt-get -y clean
+    apt-get -y autoclean
+    apt-get -y autoremove
 
     conn_check
 else
