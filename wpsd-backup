@@ -4,6 +4,7 @@
 #                          #
 #   WPSD Backup            #
 #     By Carl, VK1KCM      #
+#     & Chip, W0CHP        #
 #                          #
 ############################
 
@@ -14,146 +15,245 @@ fi
 
 source /usr/local/sbin/.wpsd-common-funcs
 
+# Global Variables
+HOSTNAME=$(cat /etc/hostname)
+DATE_STR=$(date "+%Y-%b-%d")
+# Filename format: WPSD_Config_HOSTNAME_DATE.zip
+ZIP_NAME="WPSD_Config_${HOSTNAME}_${DATE_STR}.zip"
+
 function CreateBackup() {
-	backupDir="/tmp/config_backup";
-	backupZip="/tmp/config_backup.zip";
-	hostNameInfo=`cat /etc/hostname`
-	localdate=`date "+%Y-%b-%d"`
+    backupDir="/tmp/config_backup"
+    backupZip="/tmp/$ZIP_NAME"
 
-    echo "Creating backup archive."
-	
-    rm -rf $backupZip
-    rm -rf $backupDir
-    mkdir $backupDir
+    # Clean / Prep
+    rm -rf $backupZip $backupDir
+    mkdir -p $backupDir
 
+    # --- Copy Configuration Files ---
+    # Network
+    if grep -q "static ip_address" /etc/dhcpcd.conf && ! grep "static ip_address" /etc/dhcpcd.conf | grep -q "#"; then
+        cp /etc/dhcpcd.conf $backupDir > /dev/null 2>&1
+    fi
     cp /etc/wpa_supplicant/wpa_supplicant.conf $backupDir > /dev/null 2>&1
     cp /etc/NetworkManager/system-connections/*.nmconnection $backupDir > /dev/null 2>&1
     cp /etc/wpsd-upnp-rules $backupDir > /dev/null 2>&1
-    cp /etc/WPSD-Dashboard-Config.ini $backupDir > /dev/null 2>&1
-    cp /etc/hostapd/hostapd.conf $backupDir > /dev/null 2>&1
-    cp /etc/*css.ini $backupDir > /dev/null 2>&1
-    cp /etc/wpsd-release $backupDir > /dev/null 2>&1
-    cp /etc/aprsgateway $backupDir > /dev/null 2>&1
-    cp /etc/ircddbgateway $backupDir > /dev/null 2>&1
-    cp /etc/mmdvmhost $backupDir > /dev/null 2>&1
-    cp /etc/dapnetgateway $backupDir > /dev/null 2>&1
-    cp /etc/p25gateway $backupDir > /dev/null 2>&1
-    cp /etc/ysfgateway $backupDir > /dev/null 2>&1
-    cp /etc/dmr2nxdn $backupDir > /dev/null 2>&1
-    cp /etc/dmr2ysf $backupDir > /dev/null 2>&1
-    cp /etc/nxdn2dmr $backupDir > /dev/null 2>&1
-    cp /etc/ysf2dmr $backupDir > /dev/null 2>&1
-    cp /etc/dgidgateway $backupDir > /dev/null 2>&1
-    cp /etc/nxdngateway $backupDir > /dev/null 2>&1
-    cp /etc/ysf2nxdn $backupDir > /dev/null 2>&1
-    cp /etc/ysf2p25 $backupDir > /dev/null 2>&1
-    cp /etc/dmrgateway $backupDir > /dev/null 2>&1
-    cp /etc/starnetserver $backupDir > /dev/null 2>&1
-    cp /etc/timeserver $backupDir > /dev/null 2>&1
-    cp /etc/dstar-radio.* $backupDir > /dev/null 2>&1
-    cp /etc/pistar-remote $backupDir > /dev/null 2>&1
     cp /etc/hosts $backupDir > /dev/null 2>&1
     cp /etc/hostname $backupDir > /dev/null 2>&1
+
+    # WPSD Core
+    cp /etc/WPSD-Dashboard-Config.ini $backupDir > /dev/null 2>&1
+    cp /etc/wpsd-release $backupDir > /dev/null 2>&1
+    cp /etc/.WPSD_config $backupDir > /dev/null 2>&1
+    cp -a /etc/WPSD_config_mgr $backupDir > /dev/null 2>&1
+    
+    # CSS (Grab both legacy and modern if exist)
+    cp /etc/*css.ini $backupDir > /dev/null 2>&1
+
+    # MMDVM & Gateways
+    cp /etc/mmdvmhost $backupDir > /dev/null 2>&1
+    cp /etc/dstar-radio.* $backupDir > /dev/null 2>&1
+    cp /etc/pistar-remote $backupDir > /dev/null 2>&1
+    cp /etc/*gateway $backupDir > /dev/null 2>&1
+    cp /etc/dmr2* $backupDir > /dev/null 2>&1
+    cp /etc/ysf2* $backupDir > /dev/null 2>&1
+    cp /etc/nxdn2* $backupDir > /dev/null 2>&1
+    cp /etc/starnetserver $backupDir > /dev/null 2>&1
+    cp /etc/timeserver $backupDir > /dev/null 2>&1
+    cp /etc/timeserver.disable $backupDir > /dev/null 2>&1
+    
+    # API Keys & Hidden Configs
     cp /etc/bmapi.key $backupDir > /dev/null 2>&1
     cp /etc/dapnetapi.key $backupDir > /dev/null 2>&1
-    cp /etc/default/gpsd $backupDir > /dev/null 2>&1
-    cp /etc/*_paused $backupDir > /dev/null 2>&1
     cp /etc/wpsd-bm-config.json $backupDir > /dev/null 2>&1
-    cp /etc/.WPSD_config $backupDir > /dev/null 2>&1
-    cp /etc/timeserver.disable $backupDir > /dev/null 2>&1
+    cp /etc/*_paused $backupDir > /dev/null 2>&1
+    
+    # System Extras
+    cp /etc/hostapd/hostapd.conf $backupDir > /dev/null 2>&1
+    cp /etc/default/gpsd $backupDir > /dev/null 2>&1
     cp /usr/local/etc/RSSI.dat $backupDir > /dev/null 2>&1
-    cp -a /etc/WPSD_config_mgr $backupDir > /dev/null 2>&1
+    
+    # Root Hosts
     find /root/ -maxdepth 1 -name '*Hosts.txt' -exec cp {} $backupDir \; > /dev/null 2>&1
 
-    # Begin DV-Mega Cast logic to restore user cast settings
-    castResult=$(isDVmegaCast)
-    if [ "$castResult" == "true" ]; then
-        mkdir -p $backupDir/cast-settings > /dev/null 2>&1
-        sh -c 'cp -a \"/usr/local/cast/etc/\"* \"$backupDir/cast-settings/\"' > /dev/null 2>&1
+    # DV-Mega Cast
+    if [ "$(type -t isDVmegaCast)" == "function" ] && [ "$(isDVmegaCast)" == "true" ]; then
+        mkdir -p $backupDir/cast-settings
+        cp -a /usr/local/cast/etc/* $backupDir/cast-settings/ > /dev/null 2>&1
     fi
 
+    # Zip it up (Flat structure)
     cd $backupDir
     zip -rq $backupZip * > /dev/null 2>&1
 }
 
-function scpBackup() {
-    echo "Copying backup via scp to $1./WPSD_Config_$localdate.zip"
-    scp $backupZip $1./WPSD_Config_$localdate.zip
+function RestoreBackup() {
+    restoreZip="$1"
+    restoreDir="/tmp/config_restore"
 
+    if [ ! -f "$restoreZip" ]; then
+        echo "Error: Backup file not found: $restoreZip"
+        exit 1
+    fi
+
+    echo "Preparing restore..."
+    rm -rf $restoreDir
+    mkdir -p $restoreDir
+    
+    # Unzip
+    unzip -o -q "$restoreZip" -d $restoreDir
+
+    echo "Stopping services..."
+    wpsd-services fullstop > /dev/null 2>&1
+
+    echo "Restoring configuration files..."
+    
+    # Cleanup old configs to ensure clean state
+    rm -rf /etc/WPSD-Dashboard-Config.ini /etc/dstar-radio.* /etc/bmapi.key /etc/wpsd-bm-config.json /etc/dapnetapi.key /etc/timeserver.disable /etc/WPSD_config_mgr > /dev/null 2>&1
+
+    # Restore WPSD Profile Manager Data
+    if [ -d "$restoreDir/WPSD_config_mgr" ]; then
+        cp -a "$restoreDir/WPSD_config_mgr" /etc/ > /dev/null 2>&1
+    fi
+
+    # Restore DV-Mega Cast
+    if [ "$(type -t isDVmegaCast)" == "function" ] && [ "$(isDVmegaCast)" == "true" ] && [ -d "$restoreDir/cast-settings" ]; then
+        mkdir -p /usr/local/cast/etc
+        cp -a "$restoreDir/cast-settings/"* /usr/local/cast/etc/ > /dev/null 2>&1
+        chmod 775 /usr/local/cast/etc
+        chown -R www-data:pi-star /usr/local/cast/etc
+        chmod 664 /usr/local/cast/etc/*
+        /usr/local/cast/sbin/RSET.sh > /dev/null 2>&1 &
+    fi
+
+    # Move files to destinations
+    [ -f "$restoreDir/gpsd" ] && mv -f "$restoreDir/gpsd" /etc/default/
+    [ -f "$restoreDir/RSSI.dat" ] && mv -f "$restoreDir/RSSI.dat" /usr/local/etc/
+    find "$restoreDir/" -maxdepth 1 -name "*Hosts.txt" -exec mv -fv {} /root \; > /dev/null 2>&1
+    
+    [ -f "$restoreDir/wpa_supplicant.conf" ] && mv -f "$restoreDir/wpa_supplicant.conf" /etc/wpa_supplicant/
+    mv -f "$restoreDir/"*.nmconnection /etc/NetworkManager/system-connections/ > /dev/null 2>&1
+    
+    [ -f "$restoreDir/wpsd-upnp-rules" ] && mv -f "$restoreDir/wpsd-upnp-rules" /etc/
+    [ -f "$restoreDir/hostapd.conf" ] && mv -f "$restoreDir/hostapd.conf" /etc/hostapd/
+    mv -f "$restoreDir/"*_paused /etc/ > /dev/null 2>&1
+    
+    [ -f "$restoreDir/wpsd-bm-config.json" ] && cp -a "$restoreDir/wpsd-bm-config.json" /etc/
+    [ -f "$restoreDir/.WPSD_config" ] && cp -a "$restoreDir/.WPSD_config" /etc/
+
+    # CSS Legacy Handling
+    if [ -f "$restoreDir/wpsd-css.ini" ]; then
+        mv -f "$restoreDir/wpsd-css.ini" /etc/wpsd-css.ini
+    elif [ -f "$restoreDir/pistar-css.ini" ]; then
+        mv -f "$restoreDir/pistar-css.ini" /etc/wpsd-css.ini
+    fi
+
+    # Move everything else remaining in restore root to /etc/
+    find "$restoreDir" -maxdepth 1 -type f -exec mv -n {} /etc/ \; > /dev/null 2>&1
+
+    # Post-Restore Fixes
+    # 1. Timezone
+    timeZone=$(grep -oP '^Timezone = \K.*' /etc/WPSD-Dashboard-Config.ini | tr -d '\r\n')
+    if [ ! -z "$timeZone" ]; then
+        timedatectl set-timezone "$timeZone" > /dev/null 2>&1
+    fi
+
+    # 2. IRC Password Sync
+    ircPass=$(grep remotePassword /etc/ircddbgateway | awk -F'=' '{print $2}')
+    if [ ! -z "$ircPass" ]; then
+        sed -i "/password=/c\\password=$ircPass" /root/.Remote\ Control > /dev/null 2>&1
+    fi
+
+    # 3. Hardware Resets
+    /usr/local/sbin/.wpsd-display-driver-helper > /dev/null 2>&1
+    /usr/local/sbin/wpsd-modemreset boot > /dev/null 2>&1
+    
+    echo "Restarting services..."
+    wpsd-services start > /dev/null 2>&1
+}
+
+function scpBackup() {
+    # Uses the global ZIP_NAME which now includes hostname
+    echo "Copying backup via scp to $1./$ZIP_NAME"
+    scp $backupZip $1./$ZIP_NAME
 }
 
 function copyBackup() {
-    echo "Copying backup via scp to $1/WPSD_Config_$localdate.zip"
-    cp $backupZip $1/WPSD_Config_$localdate.zip > /dev/null 2>&1
+    targetDir="$1"
+    targetFile="$targetDir/$ZIP_NAME"
+    
+    # Redirect info message to stderr so PHP doesn't capture it
+    echo "Copying backup to $targetFile" >&2
+    
+    cp $backupZip "$targetFile" > /dev/null 2>&1
+    
+    # Set permissions so web user (www-data) can read AND delete it
+    chmod 666 "$targetFile"
+    
+    # Output ONLY the filename to stdout for PHP to capture
+    echo "$targetFile"
 }
 
 function DisplayHelp() {
-    echo "$(basename "$0") usage:"
+    echo -e "${COL_LIGHT_GREEN}WPSD Backup & Restore Tool${COL_NC}"
+    echo "Usage: $(basename "$0") [OPTION] [ARGUMENT]"
     echo ""
-    echo "  -h,   --help                       Display this help text."
-    echo "  -s    --scp  <remote adddress>     Send the backup somewhere via scp"
-    echo "  -c    --copy <directory>           Copy the backup to this directory"
+    echo "Options:"
+    echo -e "  ${COL_LIGHT_YELLOW}-s, --scp${COL_NC} <user@host:/path>   Send backup via SCP to a remote host."
+    echo -e "  ${COL_LIGHT_YELLOW}-c, --copy${COL_NC} <directory>        Copy backup to a local directory."
+    echo -e "  ${COL_LIGHT_YELLOW}-r, --restore${COL_NC} <file>          Restore configuration from a zip file."
+    echo -e "  ${COL_LIGHT_YELLOW}-h, --help${COL_NC}                    Display this help message."
     echo ""
-    echo "One of the following two options must be specified."
-    echo "-s/--scp      This copies the backup to the remote host via scp.  You must"
-    echo "              configure scp/ssh keys properly to enable passwordless secure copy."
-    echo "              The address must be in the format <user>@<host>:<location>,"
-    echo "              for example, 'backupuser@backuphost.example.com:/backupdir'."
-    echo "              The <location> part is optional."
+    echo "Details:"
+    echo -e "  ${COL_LIGHT_YELLOW}-s/--scp${COL_NC}"
+    echo "      Copies the backup to a remote host via SCP."
+    echo "      You must configure SSH keys to enable passwordless transfer."
+    echo "      Format: <user>@<host>:<location> (e.g., 'pi@192.168.1.50:/backups')"
     echo ""
-    echo "-c/--copy     This copies the backup file to the specified directory."
-    echo "              The directory must already exist."
-    echo "              This script does not monitor disk usage.  Copying the backups to a"
-    echo "              local file regularly will fill your SD Card.  It's up to you to"
-    echo "              manage that."
+    echo -e "  ${COL_LIGHT_YELLOW}-c/--copy${COL_NC}"
+    echo "      Copies the backup file to the specified local directory."
+    echo "      The directory must already exist."
+    echo "      Note: This script does not monitor disk usage. Regular local backups"
+    echo "      may fill your SD card."
     echo ""
-    echo "In both cases, the backup will be called 'WPSD_Config_YYYY-MMM-DD.zip' where"
-    echo "'YYYY-MMM-DD' is something like '2025-Feb-23'."
+    echo "Filename Format:"
+    echo "      Backups are named: WPSD_Config_<HOSTNAME>_<YYYY-MMM-DD>.zip"
     echo ""
-    echo "The backup can be restored by uploading the backup file via the web interface."
+    echo "Restoration:"
+    echo "      Backups created here can be restored via the Web Dashboard or"
+    echo "      using the -r option of this script."
+    echo ""
 }
-
 
 if [ $# -eq 0 ]; then
     DisplayHelp
     exit 1
 fi
 
-## Parse command line
 while [[ $# -gt 0 ]]; do
     key="$1"
-
     case $key in
-    "-s" | "--scp")
-        if [[ -z $2 || $2 == -* ]]; then
-            echo "Error: No remote host specified."
-            exit 1
-        fi
+    "-s"|"--scp")
+        if [[ -z $2 || $2 == -* ]]; then echo "Error: No host specified."; exit 1; fi
         CreateBackup
         scpBackup "$2"
         exit 0
         ;;
-
-    "-c" | "--copy")
-        if [[ -z $2 || $2 == -* ]]; then
-            echo "Error: No directory specified."
-            exit 1
-        fi
+    "-c"|"--copy")
+        if [[ -z $2 || $2 == -* ]]; then echo "Error: No directory specified."; exit 1; fi
         CreateBackup
         copyBackup "$2"
         exit 0
         ;;
-
-    "-h" | "--help")
+    "-r"|"--restore")
+        if [[ -z $2 || $2 == -* ]]; then echo "Error: No backup file specified."; exit 1; fi
+        RestoreBackup "$2"
+        exit 0
+        ;;
+    "-h"|"--help")
         DisplayHelp
         exit 0
         ;;
-
     *)
-        DisplayHelp;
-        exit 1
-        ;;
+        DisplayHelp; exit 1 ;;
     esac
 done
-
-exit 0
