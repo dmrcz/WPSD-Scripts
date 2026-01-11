@@ -1,0 +1,309 @@
+#!/bin/bash
+# -------------------------------------------------------------------------
+# WPSD Profile Manager (CLI Version)
+# (c) 2026 - Chip Cuccio, W0CHP
+# -------------------------------------------------------------------------
+
+source /usr/local/sbin/.wpsd-common-funcs
+
+PROFILE_DIR="/etc/WPSD_config_mgr"
+CURRENT_PROFILE_FILE="/etc/.WPSD_config"
+
+# -------------------------------------------------------------------------
+# Helper Functions
+# -------------------------------------------------------------------------
+
+usage() {
+    echo -e "${COL_LIGHT_YELLOW}WPSD Profile Manager CLI${COL_NC}"
+    echo "Usage: wpsd-profiles [OPTION] [ARGUMENT]"
+    echo ""
+    echo "Options:"
+    echo "  -l,  --list              List all saved profiles"
+    echo "  -c,  --current           Show the currently active profile"
+    echo "  -s,  --save \"Name\"       Save current settings as a new profile"
+    echo "  -q,  --quick             Quick save (overwrite) current profile"
+    echo "  -sw, --switch \"Name\"     Switch to a specific profile"
+    echo "  -d,  --delete \"Name\"     Delete a specific profile"
+    echo "  -h,  --help              Show this help message"
+    echo ""
+    echo "Examples:"
+    echo "  wpsd-profiles -s \"My YSF Config\""
+    echo "  wpsd-profiles -sw \"DMR_Mode\""
+    exit 1
+}
+
+check_root() {
+    if [[ $EUID -ne 0 ]]; then
+        echo -e "${CROSS} Error: This script must be run as root." 
+        exit 1
+    fi
+}
+
+# Validate input to prevent directory traversal and shell injection
+validate_name() {
+    local NAME="$1"
+    
+    if [[ -z "$NAME" ]]; then
+        echo -e "${CROSS} Error: Profile name cannot be empty."
+        exit 1
+    fi
+    
+    # Enforce Alpha-Numeric + Spaces only
+    if [[ ! "$NAME" =~ ^[a-zA-Z0-9\ ]+$ ]]; then
+        echo -e "${CROSS} Error: Invalid characters in profile name: '${COL_LIGHT_RED}$NAME${COL_NC}'"
+        echo -e "    ${INFO} Only Alphanumeric characters (A-Z, 0-9) and spaces are allowed."
+        exit 1
+    fi
+}
+
+sanitize_name() {
+    # Replace spaces with underscores for filesystem safety
+    echo "$1" | tr ' ' '_'
+}
+
+check_paused() {
+    # Prevent profile ops if modes are paused to ensure data integrity
+    if ls /etc/*_paused 1> /dev/null 2>&1; then
+        echo -e "${CROSS} Error: One or more modes are Paused."
+        echo "    Please Resume them in the Configuration/Mode Manager before managing profiles."
+        exit 1
+    fi
+}
+
+# -------------------------------------------------------------------------
+# Core Logic
+# -------------------------------------------------------------------------
+
+list_profiles() {
+    if [ -d "$PROFILE_DIR" ] && [ "$(ls -A $PROFILE_DIR)" ]; then
+        echo -e "${COL_LIGHT_CYAN}Saved Profiles:${COL_NC}"
+        ls "$PROFILE_DIR" | while read line; do
+            # Display underscores as spaces
+            echo -e " ${BULL} ${line//_/ }"
+        done
+    else
+        echo -e "${INFO} No saved profiles found."
+    fi
+}
+
+show_current() {
+    if [ -f "$CURRENT_PROFILE_FILE" ]; then
+        CURRENT=$(cat "$CURRENT_PROFILE_FILE")
+        echo -e "Current Profile: ${COL_LIGHT_GREEN}${CURRENT//_/ }${COL_NC}"
+        
+        if [ -d "$PROFILE_DIR/$CURRENT" ]; then
+             MOD_DATE=$(date -r "$PROFILE_DIR/$CURRENT" "+%b %d %Y @ %I:%M %p")
+             echo "Last Saved: $MOD_DATE"
+        else
+             echo -e "${NOTE} (Warning: Profile folder for '$CURRENT' is missing!)"
+        fi
+    else
+        echo -e "${INFO} No profile currently selected."
+    fi
+}
+
+show_current_plain() {
+    if [ -f "$CURRENT_PROFILE_FILE" ]; then
+        CURRENT=$(cat "$CURRENT_PROFILE_FILE")
+        FRIENDLY="${CURRENT//_/ }"
+        # Output strictly for machine reading (no newline)
+        printf "\"%s\"" "$FRIENDLY"
+    else
+        printf "\"\""
+    fi
+}
+
+save_profile() {
+    local RAW_NAME="$1"
+    
+    validate_name "$RAW_NAME"
+    check_paused
+    
+    local SAFE_NAME=$(sanitize_name "$RAW_NAME")
+    local TARGET_DIR="$PROFILE_DIR/$SAFE_NAME"
+
+    echo -e "Saving profile: ${COL_LIGHT_YELLOW}$RAW_NAME${COL_NC}..."
+
+    mkdir -p "$TARGET_DIR"
+    
+    # Conditional: Copy Static IP if enabled
+    if grep -q "static ip_address" /etc/dhcpcd.conf && ! grep "static ip_address" /etc/dhcpcd.conf | grep -q "#"; then
+        cp /etc/dhcpcd.conf "$TARGET_DIR"
+    fi
+
+    # Core configuration files list
+    FILES=(
+        "/etc/wpa_supplicant/wpa_supplicant.conf"
+        "/etc/wpsd-upnp-rules"
+        "/etc/WPSD-Dashboard-Config.ini"
+        "/etc/hostapd/hostapd.conf"
+        "/etc/*css.ini" 
+        "/etc/aprsgateway" "/etc/ircddbgateway" "/etc/mmdvmhost" "/etc/dapnetgateway"
+        "/etc/p25gateway" "/etc/ysfgateway" "/etc/dmr2nxdn" "/etc/dmr2ysf" "/etc/nxdn2dmr"
+        "/etc/ysf2dmr" "/etc/dgidgateway" "/etc/nxdngateway" "/etc/ysf2nxdn" "/etc/ysf2p25"
+        "/etc/dmrgateway" "/etc/starnetserver" "/etc/timeserver" "/etc/dstar-radio.*"
+        "/etc/pistar-remote" "/etc/hosts" "/etc/hostname" "/etc/bmapi.key"
+        "/etc/wpsd-bm-config.json" "/etc/dapnetapi.key" "/etc/default/gpsd"
+        "/etc/*_paused" "/etc/.CALLERDETAILS" "/etc/.TGNAMES" "/usr/local/etc/RSSI.dat"
+    )
+
+    for pattern in "${FILES[@]}"; do
+        cp $pattern "$TARGET_DIR" > /dev/null 2>&1
+    done
+
+    # Hosts backup
+    cp -a /root/*Hosts.txt "$TARGET_DIR" > /dev/null 2>&1
+
+    # DVMega Cast backup (if hardware present)
+    if [ "$(isDVmegaCast)" == "true" ]; then
+        mkdir -p "$TARGET_DIR/cast-settings"
+        if [ -d "/usr/local/cast/etc" ]; then
+            cp -a "/usr/local/cast/etc/"* "$TARGET_DIR/cast-settings/" > /dev/null 2>&1
+        fi
+    fi
+
+    # Update current profile tracker
+    echo "$SAFE_NAME" > "$CURRENT_PROFILE_FILE"
+
+    echo -e "${TICK} Success! Profile '$RAW_NAME' saved."
+}
+
+restore_profile() {
+    local RAW_NAME="$1"
+    
+    validate_name "$RAW_NAME"
+    
+    local SAFE_NAME=$(sanitize_name "$RAW_NAME")
+    local SOURCE_DIR="$PROFILE_DIR/$SAFE_NAME"
+
+    if [ ! -d "$SOURCE_DIR" ]; then
+        echo -e "${CROSS} Error: Profile '$RAW_NAME' not found."
+        echo -e "    Run ${COL_LIGHT_YELLOW}wpsd-profiles -l${COL_NC} to see available profiles."
+        exit 1
+    fi
+
+    check_paused
+
+    echo -e "Switching to profile: ${COL_LIGHT_YELLOW}$RAW_NAME${COL_NC}..."
+    echo -e "${INFO} Stopping services and copying files..."
+
+    # Restore PHP Configs
+    mv "$SOURCE_DIR"/*.php /var/www/dashboard/config/ > /dev/null 2>&1
+
+    # Restore Hosts
+    cp -a "$SOURCE_DIR"/*Hosts.txt /root/ > /dev/null 2>&1
+
+    # Restore DVMega Cast
+    if [ "$(isDVmegaCast)" == "true" ] && [ -d "$SOURCE_DIR/cast-settings" ]; then
+        mkdir -p /usr/local/cast/etc
+        cp -a "$SOURCE_DIR"/cast-settings/* /usr/local/cast/etc/
+        chmod 775 /usr/local/cast/etc
+        chown -R www-data:pi-star /usr/local/cast/etc
+        chmod 664 /usr/local/cast/etc/*
+        # Trigger Cast Resets
+        /usr/local/cast/sbin/RSET.sh > /dev/null 2>&1 &
+        /usr/local/cast/bin/cast-reset > /dev/null 2>&1
+        sleep 2
+    fi
+    
+    # Cleanup temp hosts file in source
+    rm -rf "$SOURCE_DIR"/*Hosts.txt > /dev/null 2>&1
+
+    # Restore CSS (Handle legacy pistar-css.ini to wpsd-css.ini conversion)
+    if [ -f "$SOURCE_DIR/wpsd-css.ini" ]; then
+        cp "$SOURCE_DIR/wpsd-css.ini" /etc/wpsd-css.ini
+    elif [ -f "$SOURCE_DIR/pistar-css.ini" ]; then
+        cp "$SOURCE_DIR/pistar-css.ini" /etc/wpsd-css.ini
+    fi
+
+    # Restore System Configs
+    cp -a "$SOURCE_DIR"/* /etc/ > /dev/null 2>&1
+    
+    # Restore Hidden Configs
+    cp -a "$SOURCE_DIR/.CALLERDETAILS" /etc/ > /dev/null 2>&1
+    cp -a "$SOURCE_DIR/.TGNAMES" /etc/ > /dev/null 2>&1
+
+    # Fix Permissions
+    chown www-data:www-data /var/www/dashboard/
+
+    # Move Hosts back to storage to keep profile complete
+    cp -a /root/*Hosts.txt "$SOURCE_DIR" > /dev/null 2>&1
+
+    # Update current profile tracker
+    echo "$SAFE_NAME" > "$CURRENT_PROFILE_FILE"
+
+    echo -e "${INFO} Restarting WPSD services..."
+    wpsd-services restart > /dev/null &
+    
+    echo -e "${TICK} Profile switched to '$RAW_NAME'. Dashboard is reloading."
+}
+
+delete_profile() {
+    local RAW_NAME="$1"
+    
+    validate_name "$RAW_NAME"
+    
+    local SAFE_NAME=$(sanitize_name "$RAW_NAME")
+    local TARGET_DIR="$PROFILE_DIR/$SAFE_NAME"
+
+    if [ ! -d "$TARGET_DIR" ]; then
+        echo -e "${CROSS} Error: Profile '$RAW_NAME' not found."
+        exit 1
+    fi
+
+    read -p "Are you sure you want to delete '$RAW_NAME'? (y/n) " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        rm -rf "$TARGET_DIR"
+        echo -e "${TICK} Profile deleted."
+    else
+        echo "Operation cancelled."
+    fi
+}
+
+# -------------------------------------------------------------------------
+# Argument Parsing
+# -------------------------------------------------------------------------
+
+check_root
+
+if [ $# -eq 0 ]; then
+    usage
+fi
+
+case "$1" in
+    -l|--list)
+        list_profiles
+        ;;
+    -c|--current)
+        show_current
+        ;;
+    -cp)
+        show_current_plain
+        ;;
+    -s|--save)
+        save_profile "$2"
+        ;;
+    -q|--quick)
+        if [ -f "$CURRENT_PROFILE_FILE" ]; then
+            CURRENT=$(cat "$CURRENT_PROFILE_FILE")
+            # Convert underscores to spaces for validation check
+            save_profile "${CURRENT//_/ }"
+        else
+            echo -e "${CROSS} Error: No current profile set to overwrite."
+        fi
+        ;;
+    -sw|--switch)
+        restore_profile "$2"
+        ;;
+    -d|--delete)
+        delete_profile "$2"
+        ;;
+    -h|--help)
+        usage
+        ;;
+    *)
+        echo -e "${CROSS} Invalid option: $1"
+        usage
+        ;;
+esac
