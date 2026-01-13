@@ -158,9 +158,11 @@ perform_update() {
         exit 1
     fi
     
-    echo -e "  ${BOLD}${INFO} Initializing update process; Please wait...\n"
-
+    echo -e "${BULL} Stopping services & initializing update process; Please wait..."
     /usr/local/sbin/wpsd-services updatestop > /dev/null 2>&1
+    echo -e "  ${TICK} Done!"
+    echo ""
+
     
     if [ "$DISPLAY_VALUE" == "Nextion" ] ; then
         if [ "${OS_VER}" -ge 12 ] ; then
@@ -277,10 +279,12 @@ perform_update() {
     if ! systemctl is-active --quiet mmdvmhost.timer; then
         systemctl start mmdvmhost.timer > /dev/null 2>&1
     fi
-    /usr/local/sbin/wpsd-services start > /dev/null 2>&1
 
-    echo -e "  ${TICK} Done!\n" # maint.
-    complete
+    echo -e "  ${TICK} Done!\n" # maint. complete
+
+    echo -e "${BULL} Restarting services..."
+    /usr/local/sbin/wpsd-services start > /dev/null 2>&1
+    echo -e "  ${TICK} Done!\n"
 
     if [ -t 1 ]; then
         # This is running from a terminal, so it should be safe to update the OS
