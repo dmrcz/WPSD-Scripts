@@ -148,7 +148,7 @@ function RestoreBackup() {
     fi
 
     # Move everything else remaining in restore root to /etc/
-    find "$restoreDir" -maxdepth 1 -type f -exec mv -n {} /etc/ \; > /dev/null 2>&1
+    find "$restoreDir" -maxdepth 1 -type f -exec mv -f {} /etc/ \; > /dev/null 2>&1
 
     # Post-Restore Fixes
     # 1. Timezone

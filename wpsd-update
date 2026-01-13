@@ -47,9 +47,6 @@ git_checkUpdateRequired() {
 
 git_update() {
     local gitFolder=${1}
-    local dash_branch
-    dash_branch="$( git --git-dir=${gitFolder}/.git symbolic-ref --short HEAD )"
-    local remote_name="origin"
 
     if [[ $(git_checkUpdateRequired "${gitFolder}") -gt 0 ]]; then
         echo -e "  ${COL_LIGHT_MAGENTA}${NOTE} Updates found - Installing now..."
@@ -58,35 +55,26 @@ git_update() {
         cd "${gitFolder}" || { echo "ERROR: Could not cd to ${gitFolder}"; return 1; }
         trap "cd '${current_dir}'" RETURN
 
-        local target_branch="master"
-        if [[ ${gitFolder} == "/var/www/dashboard" ]]; then
-            target_branch="${dash_branch}"
-        fi
-
         git stash clear > /dev/null 2>&1
 
         if [[ ${gitFolder} == "/usr/local/sbin" ]]; then
-            git fetch -q "${remote_name}" master > /dev/null 2>&1
-            if [ "$(git diff --name-only ${remote_name}/master 2>/dev/null | grep -x wpsd-update 2>/dev/null)" = "wpsd-update" ]; then
+            git fetch -q origin master > /dev/null 2>&1
+            if [ "$(git diff --name-only origin/master 2>/dev/null | grep -x wpsd-update 2>/dev/null)" = "wpsd-update" ]; then
                 echo -e "\n  ${COL_LIGHT_BLUE}${INFO} New version of the Updater available. Performing self-update..."
-                git reset --hard -q "${remote_name}/master" > /dev/null 2>&1
+                git reset --hard -q origin/master > /dev/null 2>&1
                 echo -e "  ${TICK} Updates installed!"
                 echo -e "\n  ${COL_LIGHT_BLUE}${INFO} Relaunching Updater with the new version in 3 seconds..."
                 sleep 4
                 exec "$0" "$@"
                 exit 1
             fi
-            target_branch="master"
         elif [[ ${gitFolder} == "/usr/local/bin" ]]; then
             /usr/local/sbin/wpsd-services fullstop > /dev/null 2>&1
             process_log_file > /dev/null 2>&1
-            target_branch="master"
-        elif [[ ${gitFolder} == "/opt/cast" ]]; then
-            target_branch="master"
         fi
 
-        git fetch -q "${remote_name}" "${target_branch}" > /dev/null 2>&1
-        git reset --hard -q "${remote_name}/${target_branch}" > /dev/null 2>&1
+        git fetch -q origin master > /dev/null 2>&1
+        git reset --hard -q origin/master > /dev/null 2>&1
 
         git stash clear > /dev/null 2>&1
 
@@ -225,7 +213,6 @@ perform_update() {
     castResult=$(isDVmegaCast)
     if [ "$castResult" == "true" ]; then
         echo -e "${BULL} Updating WPSD DVMega CAST Software..."
-        # setup local cast repo and link repo to cast PATH
         if [ ! -d '/opt/cast' ] ; then
             cd /usr/local/sbin
             git reset --hard > /dev/null 2>&1
@@ -235,7 +222,6 @@ perform_update() {
 
             git clone https://wpsd-swd.w0chp.net/WPSD-SWD/DVMega-Cast.git /opt/cast > /dev/null 2>&1
             cd /opt/cast
-            git checkout master > /dev/null 2>&1
             git reset --hard origin/master > /dev/null 2>&1
 
             rm -rf /usr/local/cast/sbin
@@ -250,32 +236,24 @@ perform_update() {
             mkdir /usr/local/cast/etc > /dev/null 2>&1
             cp -a /opt/cast/cast-factory-settings/* /usr/local/cast/etc/ > /dev/null 2>&1
         fi
-        if [ -d '/opt/cast' ] ; then
-            # setup the memory-list and firmware upgrade www symlinks if they don't exist yet.
+        if [ -d '/opt/cast' ]; then
             if [ ! -L '/var/www/dashboard/admin/cast' ] && [ ! -d '/var/www/dashboard/admin/cast' ]; then
                 ln -s /opt/cast/usr-local-cast-www /var/www/dashboard/admin/cast > /dev/null 2>&1
             fi
-            # setup central fw upload dir.
             if [ ! -d '/opt/cast/usr-local-cast-www/cast-firmware/fw' ]; then
                 mkdir /opt/cast/usr-local-cast-www/cast-firmware/fw
             fi
         fi
-        # ensure configs always have proper perms
         chmod 775 /usr/local/cast/etc
         chown -R www-data:pi-star /usr/local/cast/etc
         chmod 664 /usr/local/cast/etc/*
-
-        # www is a symlink so get main perms setup
         chmod 775 /opt/cast/usr-local-cast-www
         chmod 775 /opt/cast/usr-local-cast-www/cast-firmware/fw
         chown -R www-data:www-data /opt/cast/usr-local-cast-www
-
         git_update /opt/cast
         echo ""
     fi
 
-    #echo -e "  ${TICK} Done!\n" # updates. complete
-    
     echo -e "${BULL} Performing maintenance tasks..."
 
     # check if user already has firewall disabled, and if so, ensure it's kept that way.
