@@ -176,6 +176,8 @@ perform_update() {
             systemctl reenable wpsd-nx-shutdown.service > /dev/null 2>&1
             systemctl reenable wpsd-nx-preshutdown.service > /dev/null 2>&1
             systemctl stop nextiondriver.service > /dev/null 2>&1
+            systemctl stop mmdvmhost.timer > /dev/null 2>&1
+            systemctl stop mmdvmhost.service > /dev/null 2>&1
             /usr/local/sbin/.wpsd-nextion-text.py t1 "Please Wait..." > /dev/null 2>&1
             /usr/local/sbin/.wpsd-nextion-text.py t0 "Updating..." > /dev/null 2>&1
         fi
