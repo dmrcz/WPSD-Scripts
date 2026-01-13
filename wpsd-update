@@ -68,9 +68,6 @@ git_update() {
                 exec "$0" "$@"
                 exit 1
             fi
-        elif [[ ${gitFolder} == "/usr/local/bin" ]]; then
-            /usr/local/sbin/wpsd-services fullstop > /dev/null 2>&1
-            process_log_file > /dev/null 2>&1
         fi
 
         git fetch -q origin master > /dev/null 2>&1
@@ -85,10 +82,6 @@ git_update() {
             echo -e "\n  ${COL_LIGHT_BLUE}${INFO} Sync & Reset complete: Relaunching Updater in 3 seconds..."
             sleep 4
             exec "$0" "$@"
-        fi
-
-        if [[ ${gitFolder} == "/usr/local/bin" ]]; then
-            /usr/local/sbin/wpsd-services start > /dev/null 2>&1
         fi
 
         echo -e "  ${TICK} Updates installed!"
@@ -164,32 +157,18 @@ perform_update() {
         echo -e "  ${CROSS} ${COL_BRIGHT_RED}ERROR:${COL_NC} Cannot connect to the WPSD Update System. Try again later. Exiting...\n"
         exit 1
     fi
-    sleep 2
+    
     echo -e "  ${BOLD}${INFO} Initializing update process; Please wait...\n"
-    sleep 2
 
+    /usr/local/sbin/wpsd-services updatestop > /dev/null 2>&1
+    
     if [ "$DISPLAY_VALUE" == "Nextion" ] ; then
         if [ "${OS_VER}" -ge 12 ] ; then
-            sudo systemctl daemon-reload > /dev/null 2>&1
-            systemctl reenable wpsd-nx-bootup.service > /dev/null 2>&1
-            systemctl reenable wpsd-nx-reboot.service > /dev/null 2>&1
-            systemctl reenable wpsd-nx-shutdown.service > /dev/null 2>&1
-            systemctl reenable wpsd-nx-preshutdown.service > /dev/null 2>&1
-            systemctl stop nextiondriver.service > /dev/null 2>&1
-            systemctl stop mmdvmhost.timer > /dev/null 2>&1
-            systemctl stop mmdvmhost.service > /dev/null 2>&1
             /usr/local/sbin/.wpsd-nextion-text.py t1 "Please Wait..." > /dev/null 2>&1
             /usr/local/sbin/.wpsd-nextion-text.py t0 "Updating..." > /dev/null 2>&1
         fi
     elif [ "$DISPLAY_VALUE" == "OLED" ] ; then
         if [ "${OS_VER}" -ge 12 ]; then
-            sudo systemctl daemon-reload > /dev/null 2>&1
-            systemctl reenable wpsd-oled-bootup.service > /dev/null 2>&1
-            systemctl reenable wpsd-oled-reboot.service > /dev/null 2>&1
-            systemctl reenable wpsd-oled-shutdown.service > /dev/null 2>&1
-            systemctl reenable wpsd-oled-preshutdown.service > /dev/null 2>&1
-            systemctl stop mmdvmhost.timer > /dev/null 2>&1
-            systemctl stop mmdvmhost.service > /dev/null 2>&1
             /usr/local/sbin/.wpsd-oled.text.py --text1 "Updating..." --text2 "Please Wait..." > /dev/null 2>&1
         fi
     fi
@@ -298,8 +277,10 @@ perform_update() {
     if ! systemctl is-active --quiet mmdvmhost.timer; then
         systemctl start mmdvmhost.timer > /dev/null 2>&1
     fi
+    /usr/local/sbin/wpsd-services start > /dev/null 2>&1
 
-    echo -e "  ${TICK} Done!\n" # maint. complete
+    echo -e "  ${TICK} Done!\n" # maint.
+    complete
 
     if [ -t 1 ]; then
         # This is running from a terminal, so it should be safe to update the OS

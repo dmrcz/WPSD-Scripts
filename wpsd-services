@@ -31,12 +31,14 @@ function status_services() {
 }
 
 # Start/Stop all the services...
-# $1 == FULLSTOP
+# $1 == FULLSTOP or UPDATEMODE
 function stop_services()
 {
     echo -ne "Stopping WPSD services..."
     systemctl stop nextiondriver-shutdown.service > /dev/null 2>&1
-    if [ "$1" == "FULLSTOP" ]; then
+    
+    # Stop timers/cron for both FULLSTOP and UPDATEMODE
+    if [[ "$1" == "FULLSTOP" || "$1" == "UPDATEMODE" ]]; then
 	    systemctl is-active --quiet cron.service && systemctl stop cron.service
 	    systemctl is-active --quiet wpsd-running-tasks.timer && systemctl stop wpsd-running-tasks.timer
 	    systemctl is-active --quiet wpsd-running-tasks.service && systemctl stop wpsd-running-tasks.service
@@ -72,18 +74,26 @@ function stop_services()
     systemctl stop gpsd.service > /dev/null 2>&1
     systemctl stop gpsd.socket > /dev/null 2>&1
     systemctl stop timeserver.service > /dev/null 2>&1
-    systemctl stop nextiondriver.service > /dev/null 2>&1
+    
+    # ONLY stop nextion driver if NOT in Update Mode
+    if [ "$1" != "UPDATEMODE" ]; then
+        systemctl stop nextiondriver.service > /dev/null 2>&1
+    fi
+    
     systemctl stop wpsd-hostfile-update.timer > /dev/null 2>&1
 
-    if [ "$DISPLAY_VALUE" == "Nextion" ] ; then
-        if [ "${OS_VER}" -ge 12 ] ; then
-            /usr/local/sbin/.wpsd-nextion-text.py -c > /dev/null 2>&1
-            /usr/local/sbin/.wpsd-nextion-text.py t0 "Services Stopped" > /dev/null 2>&1
+    # ONLY send "Services Stopped" text if NOT in Update Mode
+    if [ "$1" != "UPDATEMODE" ]; then
+        if [ "$DISPLAY_VALUE" == "Nextion" ] ; then
+            if [ "${OS_VER}" -ge 12 ] ; then
+                /usr/local/sbin/.wpsd-nextion-text.py -c > /dev/null 2>&1
+                /usr/local/sbin/.wpsd-nextion-text.py t0 "Services Stopped" > /dev/null 2>&1
+            fi
         fi
-    fi
-    if [ "$DISPLAY_VALUE" == "OLED" ] ; then
-        if [ "${OS_VER}" -ge 12 ] ; then
-            /usr/local/sbin/.wpsd-oled.text.py --text1 "WPSD" --text2 "Services Stopped" > /dev/null 2>&1
+        if [ "$DISPLAY_VALUE" == "OLED" ] ; then
+            if [ "${OS_VER}" -ge 12 ] ; then
+                /usr/local/sbin/.wpsd-oled.text.py --text1 "WPSD" --text2 "Services Stopped" > /dev/null 2>&1
+            fi
         fi
     fi
 
@@ -166,6 +176,7 @@ function start_services()
 
 case "$1" in
     start)
+    	process_log_file > /dev/null 2>&1
         start_services
         ;;
     
@@ -178,22 +189,24 @@ case "$1" in
         stop_services "FULLSTOP"
     	process_log_file > /dev/null 2>&1
         ;;
+        
+    updatestop)
+        stop_services "UPDATEMODE"
+    	process_log_file > /dev/null 2>&1
+        ;;
     
     status)
 	status_services
 	;;
-    
     restart)
         stop_services "FULLSTOP"
     	process_log_file > /dev/null 2>&1
         start_services
         ;;
-    
     *)
-        echo -e "`basename $0` {start|stop|fullstop|restart}\n"
+        echo -e "`basename $0` {start|stop|fullstop|updatestop|restart}\n"
         exit 1
         ;;
 esac
 
 exit 0
-
