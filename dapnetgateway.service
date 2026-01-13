@@ -28,7 +28,7 @@ if [ `sed -n '/^\[POCSAG Network\]/,/^\[/p' /etc/mmdvmhost | grep "^Enable" | aw
   exit 0;
 fi
 
-if [[ $(egrep -h -i "TOPSECRET|M1ABC" /etc/dapnetgateway | wc -l) -gt 0 ]]; then
+if [[ $(egrep -h -i "TOPSECRET|WPSD42" /etc/dapnetgateway | wc -l) -gt 0 ]]; then
   exit 0;
 fi
 

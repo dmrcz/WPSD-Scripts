@@ -24,7 +24,7 @@ test -x ${DAEMON_PATH}${DAEMON} || exit 0
 test -r $CONFIG || exit 0
 
 
-if [[ $(egrep -h -i "12345|M1ABC" ${CONFIG} | wc -l) -gt 0 ]]; then
+if [[ $(egrep -h -i "12345|WPSD42" ${CONFIG} | wc -l) -gt 0 ]]; then
   exit 0;
 fi
 

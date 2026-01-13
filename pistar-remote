@@ -212,7 +212,7 @@ while True:
             if line[3:22] >= logstampnowminus60sec and line[3:22] <= logstampnow:
 
                 # DMR Stop MMDVMHost
-                # M: 2017-07-03 09:39:38.208 DMR Slot 2, received RF voice header from M1ABC to 123456
+                # M: 2017-07-03 09:39:38.208 DMR Slot 2, received RF voice header from WPSD42 to 123456
                 if str('received RF voice header from ' + keeperCall + ' to ' + dmrstop) in line:
                     # Kill the Services
                     os.system(r'systemctl stop mmdvmhost.timer')
@@ -221,7 +221,7 @@ while True:
                     os.system(r'systemctl stop pistar-watchdog.service')
 
                 # DMR Restart MMDVMHost
-                # M: 2017-07-03 09:39:38.208 DMR Slot 2, received RF voice header from M1ABC to 123456
+                # M: 2017-07-03 09:39:38.208 DMR Slot 2, received RF voice header from WPSD42 to 123456
                 if str('received RF voice header from ' + keeperCall + ' to ' + dmrrestart) in line:
                     # Restart the Services
                     os.system(r'systemctl restart mmdvmhost.service')
@@ -229,25 +229,25 @@ while True:
                     time.sleep(30)
 
                 # DMR Restart the OS
-                # M: 2017-07-03 09:39:38.208 DMR Slot 2, received RF voice header from M1ABC to 123456
+                # M: 2017-07-03 09:39:38.208 DMR Slot 2, received RF voice header from WPSD42 to 123456
                 if str('received RF voice header from ' + keeperCall + ' to ' + dmrreboot) in line:
                     # Restart the OS
                     os.system(r'shutdown -r now')
 
                 # DMR Shutdown the OS
-                # M: 2017-07-03 09:39:38.208 DMR Slot 2, received RF voice header from M1ABC to 123456
+                # M: 2017-07-03 09:39:38.208 DMR Slot 2, received RF voice header from WPSD42 to 123456
                 if str('received RF voice header from ' + keeperCall + ' to ' + dmrshutdown) in line:
                     # Shutdown the OS
                     os.system(r'shutdown -h now')
 
                 # DMR Update Hostfiles
-                # M: 2017-07-03 09:39:38.208 DMR Slot 2, received RF voice header from M1ABC to 123456
+                # M: 2017-07-03 09:39:38.208 DMR Slot 2, received RF voice header from WPSD42 to 123456
                 if str('received RF voice header from ' + keeperCall + ' to ' + dmrhostfiles) in line:
                     # Update Host files
                     os.system(r'/usr/local/sbin/wpsd-hostfile-update')
 
                 # DMR Reconnect WIFI
-                # M: 2017-07-03 09:39:38.208 DMR Slot 2, received RF voice header from M1ABC to 123456
+                # M: 2017-07-03 09:39:38.208 DMR Slot 2, received RF voice header from WPSD42 to 123456
                 if str('received RF voice header from ' + keeperCall + ' to ' + dmrreconnect) in line:
                     # trigger reconnect
                     os.system(
@@ -258,7 +258,7 @@ while True:
                     os.system(r'wpa_cli scan')
 
                 # P25 Stop MMDVMHost
-                # M: 2017-08-08 08:02:43.352 P25, received RF transmission from M1ABC to TG 123456
+                # M: 2017-08-08 08:02:43.352 P25, received RF transmission from WPSD42 to TG 123456
                 if str('P25, received RF transmission from ' + keeperCall + ' to TG ' + p25stop) in line:
                     # Kill the Services
                     os.system(r'systemctl stop mmdvmhost.timer')
@@ -267,7 +267,7 @@ while True:
                     os.system(r'systemctl stop pistar-watchdog.service')
 
                 # P25 Restart MMDVMHost
-                # M: 2017-08-08 08:02:43.352 P25, received RF transmission from M1ABC to TG 123456
+                # M: 2017-08-08 08:02:43.352 P25, received RF transmission from WPSD42 to TG 123456
                 if str('P25, received RF transmission from ' + keeperCall + ' to TG ' + p25restart) in line:
                     # Restart the Services
                     os.system(r'systemctl restart mmdvmhost.service')
@@ -275,25 +275,25 @@ while True:
                     time.sleep(30)
 
                 # P25 Restart the OS
-                # M: 2017-08-08 08:02:43.352 P25, received RF transmission from M1ABC to TG 123456
+                # M: 2017-08-08 08:02:43.352 P25, received RF transmission from WPSD42 to TG 123456
                 if str('P25, received RF transmission from ' + keeperCall + ' to TG ' + p25reboot) in line:
                     # Restart the OS
                     os.system(r'shutdown -r now')
 
                 # P25 Shutdown the OS
-                # M: 2017-08-08 08:02:43.352 P25, received RF transmission from M1ABC to TG 123456
+                # M: 2017-08-08 08:02:43.352 P25, received RF transmission from WPSD42 to TG 123456
                 if str('P25, received RF transmission from ' + keeperCall + ' to TG ' + p25shutdown) in line:
                     # Shutdown the OS
                     os.system(r'shutdown -h now')
 
                 # P25 Update Hostfiles
-                # M: 2017-08-08 08:02:43.352 P25, received RF transmission from M1ABC to TG 123456
+                # M: 2017-08-08 08:02:43.352 P25, received RF transmission from WPSD42 to TG 123456
                 if str('P25, received RF transmission from ' + keeperCall + ' to TG ' + p25hostfiles) in line:
                     # Update Host Files
                     os.system(r'/usr/local/sbin/wpsd-hostfile-update')
 
                 # D-Star Stop MMDVMHost
-                # M: 2017-07-03 11:38:57.349 D-Star, received RF header from M1ABC  /1234 to COMMAND1
+                # M: 2017-07-03 11:38:57.349 D-Star, received RF header from WPSD42  /1234 to COMMAND1
                 if str('D-Star, received RF header from ' + keeperCall + ' ') and str(dstarstop) in line:
                     # Kill the Services
                     os.system(
@@ -305,7 +305,7 @@ while True:
                     os.system(r'systemctl stop pistar-watchdog.service')
 
                 # D-Star Restart MMDVMHost
-                # M: 2017-07-03 11:38:57.349 D-Star, received RF header from M1ABC  /1234 to COMMAND1
+                # M: 2017-07-03 11:38:57.349 D-Star, received RF header from WPSD42  /1234 to COMMAND1
                 if str('D-Star, received RF header from ' + keeperCall + ' ') and str(dstarrestart) in line:
                     # Restart the Services
                     os.system(
@@ -316,7 +316,7 @@ while True:
                     time.sleep(30)
 
                 # D-Star Reboot the OS
-                # M: 2017-07-03 11:38:57.349 D-Star, received RF header from M1ABC  /1234 to COMMAND1
+                # M: 2017-07-03 11:38:57.349 D-Star, received RF header from WPSD42  /1234 to COMMAND1
                 if str('D-Star, received RF header from ' + keeperCall + ' ') and str(dstarreboot) in line:
                     # Kill the Services
                     os.system(
@@ -325,7 +325,7 @@ while True:
                     os.system(r'shutdown -r now')
 
                 # D-Star Shutdown the OS
-                # M: 2017-07-03 11:38:57.349 D-Star, received RF header from M1ABC  /1234 to COMMAND1
+                # M: 2017-07-03 11:38:57.349 D-Star, received RF header from WPSD42  /1234 to COMMAND1
                 if str('D-Star, received RF header from ' + keeperCall + ' ') and str(dstarshutdown) in line:
                     # Shutdown
                     os.system(
@@ -334,7 +334,7 @@ while True:
                     os.system(r'shutdown -h now')
 
                 # D-Star Hostfiles Update
-                # M: 2017-07-03 11:38:57.349 D-Star, received RF header from M1ABC  /1234 to COMMAND1
+                # M: 2017-07-03 11:38:57.349 D-Star, received RF header from WPSD42  /1234 to COMMAND1
                 if str('D-Star, received RF header from ' + keeperCall + ' ') and str(dstarhostfiles) in line:
                     # Update Host files
                     os.system(
@@ -343,7 +343,7 @@ while True:
                     os.system(r'/usr/local/sbin/wpsd-hostfile-update')
 
                 # D-Star Get the current IP
-                # M: 2017-07-03 11:38:57.349 D-Star, received RF header from M1ABC  /1234 to COMMAND1
+                # M: 2017-07-03 11:38:57.349 D-Star, received RF header from WPSD42  /1234 to COMMAND1
                 if str('D-Star, received RF header from ' + keeperCall + ' ') and str(dstargetip) in line:
                     # Get the IP
                     myIP = os.popen(
@@ -352,7 +352,7 @@ while True:
                               myIP + '" "' + dstarmodule + '"')
 
                 # D-Star Get the wifi SSID
-                # M: 2017-07-03 11:38:57.349 D-Star, received RF header from M1ABC  /1234 to COMMAND1
+                # M: 2017-07-03 11:38:57.349 D-Star, received RF header from WPSD42  /1234 to COMMAND1
                 if str('D-Star, received RF header from ' + keeperCall + ' ') and str(dstargetwifissid) in line:
                     # Get the SSID
                     if os.path.islink('/sys/class/net/wlan0'):
@@ -365,7 +365,7 @@ while True:
                             txtTransmitBin + ' -text "WiFi: Not connected" "' + dstarmodule + '"')
 
                 # D-Star Get the wifi RSSI
-                # M: 2017-07-03 11:38:57.349 D-Star, received RF header from M1ABC  /1234 to COMMAND1
+                # M: 2017-07-03 11:38:57.349 D-Star, received RF header from WPSD42  /1234 to COMMAND1
                 if str('D-Star, received RF header from ' + keeperCall + ' ') and str(dstargetwifirssi) in line:
                     # Get the SSID
                     if os.path.islink('/sys/class/net/wlan0'):
@@ -378,7 +378,7 @@ while True:
                             txtTransmitBin + ' -text "WiFi: Not connected" "' + dstarmodule + '"')
 
                 # D-Star 8Ball
-                # M: 2017-07-03 11:38:57.349 D-Star, received RF header from M1ABC  /1234 to COMMAND1
+                # M: 2017-07-03 11:38:57.349 D-Star, received RF header from WPSD42  /1234 to COMMAND1
                 if str('D-Star, received RF header from ' + keeperCall + ' ') and str(dstar8ball) in line:
                     # Ask the 8Ball
                     magic8ballanswer = random.choice(magic8ball)
@@ -386,7 +386,7 @@ while True:
                               magic8ballanswer + '" "' + dstarmodule + '"')
 
                 # YSF
-                # M: 2017-07-13 19:50:43.464 YSF, received RF header from M1ABC      to ALL
+                # M: 2017-07-13 19:50:43.464 YSF, received RF header from WPSD42      to ALL
                 if str('YSF, received RF header from ' + keeperCall + ' ') in line:
                     # YSF Log Checking here
                     logfileysf = open(currentLogYSF, 'r')

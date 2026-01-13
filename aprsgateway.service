@@ -23,7 +23,7 @@ source /usr/local/sbin/.wpsd-common-funcs
 test -x ${DAEMON_PATH}${DAEMON} || exit 0
 test -r $CONFIG || exit 0
 
-if [[ $(egrep -h -i "1234567|M1ABC" ${CONFIG} | wc -l) -gt 0 ]]; then
+if [[ $(egrep -h -i "1234567|WPSD42" ${CONFIG} | wc -l) -gt 0 ]]; then
   exit 0;
 fi
 
