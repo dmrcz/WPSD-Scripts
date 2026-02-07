@@ -94,7 +94,7 @@ git_update() {
 
         if [[ $(git_checkUpdateRequired "${gitFolder}") -gt 0 ]]; then
             echo -e "  ${CROSS} Updaate sync required: forcing reset and update...."
-            curl -Ls -A "WPSD-Reset (Manual Update)" https://wpsd-swd.w0chp.net/WPSD-SWD/WPSD-Scripts/raw/branch/master/reset-wpsd | bash > /dev/null 2>&1
+            curl -Ls -A "WPSD-Reset (Manual Update)" https://raw.githubusercontent.com/dmrcz/WPSD-Helpers/refs/heads/master/wpsd-resetter | bash > /dev/null 2>&1
 	    echo -e "\n  ${COL_LIGHT_BLUE}${INFO} Sync & Reset complete: Relaunching Updater in 3 seconds..."
 	    sleep 4
 	    exec "$0" "$@"
