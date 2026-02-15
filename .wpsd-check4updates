@@ -50,32 +50,43 @@ if [[ ! -s "$gitRemoteVerCache" ]]; then
     exit 1
 fi
 
-# Check for updates
-update_available=false
-html_output=false
-for repo_key in "${!repos[@]}"; do
-    if [[ $(check_update "$repo_key" "${repos[$repo_key]}") -eq 1 ]]; then
-        update_available=true
-        if [ -t 1 ]; then # running from terminal
-            echo "Update available for $repo_key!"
-        else
-            html_output=true
-        fi
-    else
-        if [ -t 1 ]; then
-            echo "No updates for $repo_key."
-        fi
-    fi
-done
-if [[ $html_output == true ]]; then
-    echo "&nbsp;<a class=\"lookatme\" lookatme-text=\"Update available!\" href=\"/admin/update.php\">Update available!</a>"
+# ODS.DMRCZ UPDATE BLIKAJICI
+REPO_URL="https://github.com/dmrcz/ods.dmrcz-dash-2026-v2.git"
+BRANCH="ODS.DMRCZ-DASH-2026-v2" # Změňte na master, pokud nepoužíváte main
+
+# Ověření, zda jsme v git repozitáři
+if ! git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
+    echo "Chyba: Aktuální adresář není Git repozitář."
+    exit 1
+fi
+
+# Stažení metadat z remote bez úpravy lokálních souborů
+#echo "Kontroluji aktualizace na $REPO_URL..."               //#
+git fetch origin "$BRANCH" -q
+
+# Porovnání lokální verze se vzdálenou
+UPSTREAM=${1:-'@{u}'}
+LOCAL=$(git rev-parse @)
+REMOTE=$(git rev-parse "$UPSTREAM")
+BASE=$(git merge-base @ "$UPSTREAM")
+
+if [ "$LOCAL" = "$REMOTE" ]; then
+    echo '&nbsp;<a class="lookatme" style="color: #28a745; font-weight: bold; font-size: 3.2em; text-decoration: none;">AKTUÁLNÍ VERZE</a>';
+elif [ "$LOCAL" = "$BASE" ]; then
+   echo '&nbsp;<a class="lookatme" style="font-size: 3.2rem; color: #ff0000;" lookatme-text="AKTUALIZOVAT!" href="/admin/advanced/services.php?action=updatehostsfiles">AKTUALIZOVAT!</a>';
+elif [ "$REMOTE" = "$BASE" ]; then
+    echo " Máte lokální změny, které nejsou na serveru (Need to push)."
+else
+    echo " Větve se rozcházejí (Diverged)."
+
 fi
 
 if ! $update_available; then
     if [ -t 1 ]; then # running from terminal
-        echo "All repositories are up-to-date."
+        echo " All repositories are up-to-date."
     fi
 fi
 
 exit 0
+
 
